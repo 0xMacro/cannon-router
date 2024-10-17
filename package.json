@@ -20,7 +20,7 @@
   "author": "Synthetix",
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
+    "build": "rm -rf ./dist && tsc",
     "watch": "tsc --watch",
     "test": "mocha",
     "coverage": "nyc yarn test",
