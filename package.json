@@ -4,7 +4,6 @@
   "description": "Fork of Synthetix Router Proxy Architecture Manager, including only contract generation logic.",
   "main": "dist/index.js",
   "source": "src/index.ts",
-  "cannon": "utils/cannon.js",
   "types": "dist/index.d.ts",
   "keywords": [
     "deploy",
@@ -12,10 +11,7 @@
     "cannon"
   ],
   "files": [
-    "src",
-    "dist",
-    "templates",
-    "utils"
+    "dist"
   ],
   "author": "Synthetix",
   "license": "MIT",
