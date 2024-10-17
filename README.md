@@ -1,3 +1,5 @@
+> This project is a fork of [https://github.com/Synthetixio/synthetix-router](Synthetixio/synthetix-router) but striping out all the tests helpers for hardhat and contract compilation, leaving only the generation of the Router contract.
+
 # router
 
 Solidity router generator.
@@ -212,23 +214,3 @@ Since the router `DELEGATECALL`s to its modules, they storage will never be used
 If the router is used as the implementation of a UUPS [Universal Upgradeable Proxy Standard](https://eips.ethereum.org/EIPS/eip-1822) proxy, and includes an UpgradeModule, it can be used to design complex systems which are upgradeable until the main proxy is upgraded to a router implementation that no longer has an UpgradeModule.
 
 ⚠️ Make sure that the UUPS contract does not contain public facing functions becuase they could clash with function signatures from the implementation modules. ⚠️
-
-### Plugin configuration
-
-hardhat.config.js
-
-```
-module.exports = {
-  solidity: '0.8.11'
-  networks: {
-    ...
-  },
-  router: {
-    paths: {
-      deployments: 'deployments', // path to store deployment artifacts
-      modules: 'modules',         // path where to find module contracts
-    },
-  },
-};
-
-```
