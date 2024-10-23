@@ -28,12 +28,12 @@
     "pretty:fix": "prettier --write ."
   },
   "dependencies": {
+    "@ethersproject/abi": "^5.7.0",
     "@ethersproject/keccak256": "^5.7.0",
     "debug": "^4.3.7",
     "mustache": "^4.2.0"
   },
   "devDependencies": {
-    "@ethersproject/abi": "^5.7.0",
     "@types/debug": "^4.1.12",
     "@types/mocha": "^10.0.9",
     "@types/mustache": "^4.2.5",
