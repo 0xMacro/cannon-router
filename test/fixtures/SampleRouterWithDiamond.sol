@@ -43,15 +43,18 @@ contract SampleRouter {
                 return abi.encode(_facets());
             }
             if (sig4 == 0xadfca15e) {
-                (, address facet) = abi.decode(cd, (bytes4, address));
+                (address facet) = abi.decode(cd[4:], (address));
                 return abi.encode(_facetFunctionSelectors(facet));
             }
             if (sig4 == 0x52ef6b2c) {
                 return abi.encode(_facetAddresses());
             }
             if (sig4 == 0xcdffacc6) {
-                (, bytes4 sig) = abi.decode(cd, (bytes4, bytes4));
+                (bytes4 sig) = abi.decode(cd[4:], (bytes4));
                 return abi.encode(_facetAddress(sig));
+            }
+            if (sig4 == 0x8cce96cb) {
+                return abi.encode(_emitDiamondCutEvent());
             }
             revert UnknownSelector(sig4);
         }
@@ -134,9 +137,10 @@ contract SampleRouter {
     event DiamondCut(FacetCut[] _diamondCut, address _init, bytes _calldata);
 
     /// @notice Emits the cut events that would be emitted if this was actually a diamond
-    function _emitDiamondCutEvent() internal {
+    function _emitDiamondCutEvent() internal returns (bool) {
         FacetCut[] memory cuts = new FacetCut[](1);
         cuts[0] = FacetCut(_SAMPLE_MODULE, FacetCutAction.Add, _facetFunctionSelectors(_SAMPLE_MODULE));
         emit DiamondCut(cuts, address(0), new bytes(0));
+        return true;
     }
 }

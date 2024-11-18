@@ -87,6 +87,8 @@ describe('src/generate.ts', function () {
       hasDiamondCompat: true,
     });
 
+    require('fs').writeFileSync('/tmp/out.sol', result);
+
     deepEqual(result, expected);
   });
 });

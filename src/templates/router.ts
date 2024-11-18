@@ -41,15 +41,18 @@ contract {{{moduleName}}} {
                 return abi.encode(_facets());
             }
             if (sig4 == 0xadfca15e) {
-                (, address facet) = abi.decode(cd, (bytes4, address));
+                (address facet) = abi.decode(cd[4:], (address));
                 return abi.encode(_facetFunctionSelectors(facet));
             }
             if (sig4 == 0x52ef6b2c) {
                 return abi.encode(_facetAddresses());
             }
             if (sig4 == 0xcdffacc6) {
-                (, bytes4 sig) = abi.decode(cd, (bytes4, bytes4));
+                (bytes4 sig) = abi.decode(cd[4:], (bytes4));
                 return abi.encode(_facetAddress(sig));
+            }
+            if (sig4 == 0x8cce96cb) {
+                return abi.encode(_emitDiamondCutEvent());
             }
 {{/diamondCompat}}
             revert UnknownSelector(sig4);

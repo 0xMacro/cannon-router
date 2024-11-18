@@ -208,10 +208,11 @@ function _renderDiamondCompat(
     event DiamondCut(FacetCut[] _diamondCut, address _init, bytes _calldata);
 
     /// @notice Emits the cut events that would be emitted if this was actually a diamond
-    function _emitDiamondCutEvent() internal {
+    function _emitDiamondCutEvent() internal returns (bool) {
         FacetCut[] memory cuts = new FacetCut[](${facets.length});
         ${facets.map((f, i) => `cuts[${i}] = FacetCut(${toPrivateConstantCase(f.contractName)}, FacetCutAction.Add, _facetFunctionSelectors(${toPrivateConstantCase(f.contractName)}));`).join('\n        ')}
         emit DiamondCut(cuts, address(0), new bytes(0));
+        return true;
     }`;
 }
 
