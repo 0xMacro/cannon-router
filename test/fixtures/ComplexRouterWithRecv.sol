@@ -9,10 +9,11 @@ pragma solidity ^0.8.0;
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
 
-contract SampleRouterWithRecv {
+contract ComplexRouterWithRecv {
     error UnknownSelector(bytes4 sel);
 
     address private constant _SAMPLE_MODULE = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+    address private constant _GREETER_MODULE = 0x703aef879107aDE9820A795d3a6C36d6B9CC2B97;
 
     receive() external payable {}
 
@@ -26,9 +27,13 @@ contract SampleRouterWithRecv {
 
             function findImplementation(sig) -> result {
                 switch sig
+                case 0x26ffaa03 { result := _GREETER_MODULE } // GreeterModule.greetings()
                 case 0x2d22bef9 { result := _SAMPLE_MODULE } // SampleModule.initOrUpgradeNft()
                 case 0x60988e09 { result := _SAMPLE_MODULE } // SampleModule.getAssociatedSystem()
+                case 0xa4136862 { result := _GREETER_MODULE } // GreeterModule.setGreeting()
+                case 0xad55cd0a { result := _GREETER_MODULE } // GreeterModule.greet()
                 case 0xc6f79537 { result := _SAMPLE_MODULE } // SampleModule.initOrUpgradeToken()
+                case 0xcfae3217 { result := _GREETER_MODULE } // GreeterModule.greet()
                 case 0xd245d983 { result := _SAMPLE_MODULE } // SampleModule.registerUnmanagedSystem()
                 leave
             }

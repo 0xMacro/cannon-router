@@ -1,6 +1,7 @@
 import { deepEqual, throws } from 'node:assert/strict';
 
-import abi from '../fixtures/SampleABI.json';
+import GreeterModuleABI from '../fixtures/GreeterModuleABI.json';
+import SampleModuleABI from '../fixtures/SampleModuleABI.json';
 import { ContractValidationError } from '../../src/internal/errors';
 import { generateRouter } from '../../src/generate';
 import { loadFile } from './helpers';
@@ -11,7 +12,7 @@ describe('src/generate.ts', function () {
       generateRouter({
         contracts: [
           {
-            abi,
+            abi: SampleModuleABI,
             deployedAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
             deployTxnHash: '0x849b033c0ee690c8b9a53057495d9b3e16588a26d51a7cad4dfc6cd3d310ce0e',
             contractName: 'SampleModule',
@@ -19,7 +20,7 @@ describe('src/generate.ts', function () {
             contractFullyQualifiedName: 'contracts/modules/SampleModule.sol:SampleModule',
           },
           {
-            abi,
+            abi: SampleModuleABI,
             deployedAddress: '0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F',
             deployTxnHash: '0x9f8838e6683ef2ff84a0daaef5f85a86545acb934045140054daaf9a858c48a8',
             contractName: 'RepeatedModule',
@@ -37,7 +38,7 @@ describe('src/generate.ts', function () {
       contractName: 'SampleRouter',
       contracts: [
         {
-          abi,
+          abi: SampleModuleABI,
           deployedAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
           deployTxnHash: '0x849b033c0ee690c8b9a53057495d9b3e16588a26d51a7cad4dfc6cd3d310ce0e',
           contractName: 'SampleModule',
@@ -47,16 +48,53 @@ describe('src/generate.ts', function () {
       ],
     });
 
-    deepEqual(result, expected);
+    try {
+      deepEqual(result, expected);
+    } catch (err) {
+      console.log(result);
+      throw err;
+    }
   });
 
-  it('generates with receive eth capability SampleRouter.sol', async function () {
-    const expected = await loadFile('../fixtures/SampleRouterWithRecv.sol');
+  it('correctly generates ComplexRouter.sol', async function () {
+    const expected = await loadFile('../fixtures/ComplexRouter.sol');
     const result = generateRouter({
-      contractName: 'SampleRouter',
+      contractName: 'ComplexRouter',
       contracts: [
         {
-          abi,
+          abi: SampleModuleABI,
+          deployedAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+          deployTxnHash: '0x849b033c0ee690c8b9a53057495d9b3e16588a26d51a7cad4dfc6cd3d310ce0e',
+          contractName: 'SampleModule',
+          sourceName: 'contracts/modules/SampleModule.sol',
+          contractFullyQualifiedName: 'contracts/modules/SampleModule.sol:SampleModule',
+        },
+        {
+          abi: GreeterModuleABI,
+          deployedAddress: '0x703aef879107aDE9820A795d3a6C36d6B9CC2B97',
+          deployTxnHash: '0x5479a53f34fc89422c5b64a277bf45f146c091323b573324b853e152bc804842',
+          contractName: 'GreeterModule',
+          sourceName: 'contracts/modules/GreeterModule.sol',
+          contractFullyQualifiedName: 'contracts/modules/GreeterModule.sol:GreeterModule',
+        },
+      ],
+    });
+
+    try {
+      deepEqual(result, expected);
+    } catch (err) {
+      console.log(result);
+      throw err;
+    }
+  });
+
+  it('generates with receive eth capability SampleRouterWithRecv.sol', async function () {
+    const expected = await loadFile('../fixtures/SampleRouterWithRecv.sol');
+    const result = generateRouter({
+      contractName: 'SampleRouterWithRecv',
+      contracts: [
+        {
+          abi: SampleModuleABI,
           deployedAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
           deployTxnHash: '0x849b033c0ee690c8b9a53057495d9b3e16588a26d51a7cad4dfc6cd3d310ce0e',
           contractName: 'SampleModule',
@@ -67,16 +105,54 @@ describe('src/generate.ts', function () {
       canReceivePlainETH: true,
     });
 
-    deepEqual(result, expected);
+    try {
+      deepEqual(result, expected);
+    } catch (err) {
+      console.log(result);
+      throw err;
+    }
   });
 
-  it('generates with diamond capability SampleRouter.sol', async function () {
-    const expected = await loadFile('../fixtures/SampleRouterWithDiamond.sol');
+  it('generates with receive eth capability ComplexRouterWithRecv.sol', async function () {
+    const expected = await loadFile('../fixtures/ComplexRouterWithRecv.sol');
     const result = generateRouter({
-      contractName: 'SampleRouter',
+      contractName: 'ComplexRouterWithRecv',
       contracts: [
         {
-          abi,
+          abi: SampleModuleABI,
+          deployedAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+          deployTxnHash: '0x849b033c0ee690c8b9a53057495d9b3e16588a26d51a7cad4dfc6cd3d310ce0e',
+          contractName: 'SampleModule',
+          sourceName: 'contracts/modules/SampleModule.sol',
+          contractFullyQualifiedName: 'contracts/modules/SampleModule.sol:SampleModule',
+        },
+        {
+          abi: GreeterModuleABI,
+          deployedAddress: '0x703aef879107aDE9820A795d3a6C36d6B9CC2B97',
+          deployTxnHash: '0x5479a53f34fc89422c5b64a277bf45f146c091323b573324b853e152bc804842',
+          contractName: 'GreeterModule',
+          sourceName: 'contracts/modules/GreeterModule.sol',
+          contractFullyQualifiedName: 'contracts/modules/GreeterModule.sol:GreeterModule',
+        },
+      ],
+      canReceivePlainETH: true,
+    });
+
+    try {
+      deepEqual(result, expected);
+    } catch (err) {
+      console.log(result);
+      throw err;
+    }
+  });
+
+  it('generates with diamond capability SampleRouterWithDiamond.sol', async function () {
+    const expected = await loadFile('../fixtures/SampleRouterWithDiamond.sol');
+    const result = generateRouter({
+      contractName: 'SampleRouterWithDiamond',
+      contracts: [
+        {
+          abi: SampleModuleABI,
           deployedAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
           deployTxnHash: '0x849b033c0ee690c8b9a53057495d9b3e16588a26d51a7cad4dfc6cd3d310ce0e',
           contractName: 'SampleModule',
@@ -87,8 +163,44 @@ describe('src/generate.ts', function () {
       hasDiamondCompat: true,
     });
 
-    require('fs').writeFileSync('/tmp/out.sol', result);
+    try {
+      deepEqual(result, expected);
+    } catch (err) {
+      console.log(result);
+      throw err;
+    }
+  });
 
-    deepEqual(result, expected);
+  it('generates with diamond capability ComplexRouterWithDiamond.sol', async function () {
+    const expected = await loadFile('../fixtures/ComplexRouterWithDiamond.sol');
+    const result = generateRouter({
+      contractName: 'ComplexRouterWithDiamond',
+      contracts: [
+        {
+          abi: SampleModuleABI,
+          deployedAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+          deployTxnHash: '0x849b033c0ee690c8b9a53057495d9b3e16588a26d51a7cad4dfc6cd3d310ce0e',
+          contractName: 'SampleModule',
+          sourceName: 'contracts/modules/SampleModule.sol',
+          contractFullyQualifiedName: 'contracts/modules/SampleModule.sol:SampleModule',
+        },
+        {
+          abi: GreeterModuleABI,
+          deployedAddress: '0x703aef879107aDE9820A795d3a6C36d6B9CC2B97',
+          deployTxnHash: '0x5479a53f34fc89422c5b64a277bf45f146c091323b573324b853e152bc804842',
+          contractName: 'GreeterModule',
+          sourceName: 'contracts/modules/GreeterModule.sol',
+          contractFullyQualifiedName: 'contracts/modules/GreeterModule.sol:GreeterModule',
+        },
+      ],
+      hasDiamondCompat: true,
+    });
+
+    try {
+      deepEqual(result, expected);
+    } catch (err) {
+      console.log(result);
+      throw err;
+    }
   });
 });

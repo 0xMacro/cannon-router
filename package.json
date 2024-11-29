@@ -1,6 +1,6 @@
 {
   "name": "@usecannon/router",
-  "version": "4.1.1-0",
+  "version": "4.1.2",
   "description": "Fork of Synthetix Router Proxy Architecture Manager, including only contract generation logic.",
   "main": "dist/index.js",
   "source": "src/index.ts",

@@ -147,11 +147,10 @@ function _renderDiamondConstructor(
         bytes4[] memory selectors;
         ${facets
           .map(
-            (f, i) =>
-              `
-              selectors = new bytes4[](${f.selectors.length});
-              ${f.selectors.map((s, j) => `${TAB}${TAB}selectors[${j}] = ${s.selector};`).join('\n')}
-            _facets().push(Facet(${toPrivateConstantCase(f.contractName)}, selectors));`
+            (f) =>
+              `selectors = new bytes4[](${f.selectors.length});
+${f.selectors.map((s, j) => `${TAB}${TAB}selectors[${j}] = ${s.selector};`).join('\n')}
+        _facets().push(Facet(${toPrivateConstantCase(f.contractName)}, selectors));`
           )
           .join('\n        ')}
 

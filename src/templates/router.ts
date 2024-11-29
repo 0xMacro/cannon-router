@@ -12,13 +12,17 @@ pragma solidity ^0.8.0;
 contract {{{moduleName}}} {
     error UnknownSelector(bytes4 sel);
 
+{{#diamondCompat}}
     address immutable private _ROUTER_ADDRESS;
+
     constructor() {
         _ROUTER_ADDRESS = address(this);
-{{{diamondConstructor}}}        
+{{{diamondConstructor}}}
     }
+
+{{/diamondCompat}}
     {{{modules}}}
-{{#receive}}    {{{receive}}}{{/receive}}
+{{#receive}}{{{receive}}}{{/receive}}
 {{^receive}}{{/receive}}
     fallback({{#diamondCompat}}bytes calldata cd{{/diamondCompat}}) external payable{{#diamondCompat}} returns (bytes memory){{/diamondCompat}} {
         // Lookup table: Function selector => implementation contract
