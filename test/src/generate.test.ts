@@ -70,7 +70,7 @@ describe('src/generate.ts', function () {
     deepEqual(result, expected);
   });
 
-  it('generates with diamond capability SampleRouter.sol', async function () {
+  it('generates with diamond capability SampleRouterWithDiamond.sol', async function () {
     const expected = await loadFile('../fixtures/SampleRouterWithDiamond.sol');
     const result = generateRouter({
       contractName: 'SampleRouter',

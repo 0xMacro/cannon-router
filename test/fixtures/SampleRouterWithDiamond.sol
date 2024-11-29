@@ -12,19 +12,22 @@ pragma solidity ^0.8.0;
 contract SampleRouter {
     error UnknownSelector(bytes4 sel);
 
+    address immutable private _ROUTER_ADDRESS;
+
     constructor() {
+        _ROUTER_ADDRESS = address(this);
 
         bytes4[] memory selectors;
-        
-              selectors = new bytes4[](4);
-                      selectors[0] = 0x60988e09;
+        selectors = new bytes4[](4);
+        selectors[0] = 0x60988e09;
         selectors[1] = 0x2d22bef9;
         selectors[2] = 0xc6f79537;
         selectors[3] = 0xd245d983;
-            _facets().push(Facet(_SAMPLE_MODULE, selectors));
+        _facets().push(Facet(_SAMPLE_MODULE, selectors));
 
-        _emitDiamondCutEvent();        
+        _emitDiamondCutEvent();
     }
+
     address private constant _SAMPLE_MODULE = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
 
     fallback(bytes calldata cd) external payable returns (bytes memory) {
@@ -48,24 +51,35 @@ contract SampleRouter {
         }
 
         if (implementation == address(0)) {
-            // Check for diamond compat call
-            if (sig4 == 0x7a0ed627) {
-                return abi.encode(_facets());
+            // It's possible this contract is being called through yet another proxy. Call the router in order to make sure we have right data.
+            if (address(this) != _ROUTER_ADDRESS) {
+                (bool success, bytes memory result) = _ROUTER_ADDRESS.call(cd);
+                if (success) {
+                    return result;
+                } else {
+                    revert UnknownSelector(sig4);
+                }
+            } else {
+                // Check for diamond compat call
+                if (sig4 == 0x7a0ed627) {
+                    return abi.encode(_facets());
+                }
+                if (sig4 == 0xadfca15e) {
+                    (address facet) = abi.decode(cd[4:], (address));
+                    return abi.encode(_facetFunctionSelectors(facet));
+                }
+                if (sig4 == 0x52ef6b2c) {
+                    return abi.encode(_facetAddresses());
+                }
+                if (sig4 == 0xcdffacc6) {
+                    (bytes4 sig) = abi.decode(cd[4:], (bytes4));
+                    return abi.encode(_facetAddress(sig));
+                }
+                if (sig4 == 0x8cce96cb) {
+                    return abi.encode(_emitDiamondCutEvent());
+                }
             }
-            if (sig4 == 0xadfca15e) {
-                (address facet) = abi.decode(cd[4:], (address));
-                return abi.encode(_facetFunctionSelectors(facet));
-            }
-            if (sig4 == 0x52ef6b2c) {
-                return abi.encode(_facetAddresses());
-            }
-            if (sig4 == 0xcdffacc6) {
-                (bytes4 sig) = abi.decode(cd[4:], (bytes4));
-                return abi.encode(_facetAddress(sig));
-            }
-            if (sig4 == 0x8cce96cb) {
-                return abi.encode(_emitDiamondCutEvent());
-            }
+
             revert UnknownSelector(sig4);
         }
 
@@ -102,7 +116,7 @@ contract SampleRouter {
 
     /// @notice Gets all facet addresses and their four byte function selectors.
     /// @return facets_ Facet
-    function _facets() internal view returns (Facet[] storage facets_) {
+    function _facets() internal pure returns (Facet[] storage facets_) {
         bytes32 s = keccak256("Router.SampleRouter");
         assembly {
             facets_.slot := s
