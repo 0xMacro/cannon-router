@@ -9,7 +9,7 @@ pragma solidity ^0.8.0;
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
 
-contract SampleRouterWithDiamond {
+contract ComplexRouterWithDiamond {
     error UnknownSelector(bytes4 sel);
 
     address immutable private _ROUTER_ADDRESS;
@@ -24,11 +24,18 @@ contract SampleRouterWithDiamond {
         selectors[2] = 0xc6f79537;
         selectors[3] = 0xd245d983;
         _facets().push(Facet(_SAMPLE_MODULE, selectors));
+        selectors = new bytes4[](4);
+        selectors[0] = 0xad55cd0a;
+        selectors[1] = 0xcfae3217;
+        selectors[2] = 0x26ffaa03;
+        selectors[3] = 0xa4136862;
+        _facets().push(Facet(_GREETER_MODULE, selectors));
 
         _emitDiamondCutEvent();
     }
 
     address private constant _SAMPLE_MODULE = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+    address private constant _GREETER_MODULE = 0x703aef879107aDE9820A795d3a6C36d6B9CC2B97;
 
     fallback(bytes calldata cd) external payable returns (bytes memory) {
         // Lookup table: Function selector => implementation contract
@@ -40,9 +47,13 @@ contract SampleRouterWithDiamond {
 
             function findImplementation(sig) -> result {
                 switch sig
+                case 0x26ffaa03 { result := _GREETER_MODULE } // GreeterModule.greetings()
                 case 0x2d22bef9 { result := _SAMPLE_MODULE } // SampleModule.initOrUpgradeNft()
                 case 0x60988e09 { result := _SAMPLE_MODULE } // SampleModule.getAssociatedSystem()
+                case 0xa4136862 { result := _GREETER_MODULE } // GreeterModule.setGreeting()
+                case 0xad55cd0a { result := _GREETER_MODULE } // GreeterModule.greet()
                 case 0xc6f79537 { result := _SAMPLE_MODULE } // SampleModule.initOrUpgradeToken()
+                case 0xcfae3217 { result := _GREETER_MODULE } // GreeterModule.greet()
                 case 0xd245d983 { result := _SAMPLE_MODULE } // SampleModule.registerUnmanagedSystem()
                 leave
             }
@@ -116,7 +127,7 @@ contract SampleRouterWithDiamond {
     /// @notice Gets all facet addresses and their four byte function selectors.
     /// @return facets_ Facet
     function _facets() internal pure returns (Facet[] storage facets_) {
-        bytes32 s = keccak256("Router.SampleRouterWithDiamond");
+        bytes32 s = keccak256("Router.ComplexRouterWithDiamond");
         assembly {
             facets_.slot := s
         }
@@ -137,8 +148,9 @@ contract SampleRouterWithDiamond {
     /// @notice Get all the facet addresses used by a diamond.
     /// @return facetAddresses_
     function _facetAddresses() internal pure returns (address[] memory facetAddresses_) {
-        facetAddresses_ = new address[](1);
+        facetAddresses_ = new address[](2);
         facetAddresses_[0] = _SAMPLE_MODULE;
+        facetAddresses_[1] = _GREETER_MODULE;
     }
 
     /// @notice Gets the facet that supports the given selector.
@@ -160,8 +172,9 @@ contract SampleRouterWithDiamond {
 
     /// @notice Emits the cut events that would be emitted if this was actually a diamond
     function _emitDiamondCutEvent() internal returns (bool) {
-        FacetCut[] memory cuts = new FacetCut[](1);
+        FacetCut[] memory cuts = new FacetCut[](2);
         cuts[0] = FacetCut(_SAMPLE_MODULE, FacetCutAction.Add, _facetFunctionSelectors(_SAMPLE_MODULE));
+        cuts[1] = FacetCut(_GREETER_MODULE, FacetCutAction.Add, _facetFunctionSelectors(_GREETER_MODULE));
         emit DiamondCut(cuts, address(0), new bytes(0));
         return true;
     }
