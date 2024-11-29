@@ -79,7 +79,6 @@ contract SampleRouter {
                     return abi.encode(_emitDiamondCutEvent());
                 }
             }
-
             revert UnknownSelector(sig4);
         }
 

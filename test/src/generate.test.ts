@@ -47,7 +47,12 @@ describe('src/generate.ts', function () {
       ],
     });
 
-    deepEqual(result, expected);
+    try {
+      deepEqual(result, expected);
+    } catch (err) {
+      console.log(result);
+      throw err;
+    }
   });
 
   it('generates with receive eth capability SampleRouter.sol', async function () {
@@ -67,7 +72,12 @@ describe('src/generate.ts', function () {
       canReceivePlainETH: true,
     });
 
-    deepEqual(result, expected);
+    try {
+      deepEqual(result, expected);
+    } catch (err) {
+      console.log(result);
+      throw err;
+    }
   });
 
   it('generates with diamond capability SampleRouterWithDiamond.sol', async function () {
@@ -87,8 +97,11 @@ describe('src/generate.ts', function () {
       hasDiamondCompat: true,
     });
 
-    require('fs').writeFileSync('/tmp/out.sol', result);
-
-    deepEqual(result, expected);
+    try {
+      deepEqual(result, expected);
+    } catch (err) {
+      console.log(result);
+      throw err;
+    }
   });
 });
