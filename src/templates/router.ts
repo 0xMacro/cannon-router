@@ -12,10 +12,10 @@ pragma solidity ^0.8.0;
 contract {{{moduleName}}} {
     error UnknownSelector(bytes4 sel);
 
-{{#diamondCompat}}    constructor() {
-        _emitDiamondCutEvent();
+{{#diamondConstructor}}    constructor() {
+{{{diamondConstructor}}}        
     }
-{{/diamondCompat}}
+{{/diamondConstructor}}
     {{{modules}}}
 {{#receive}}    {{{receive}}}{{/receive}}
 {{^receive}}{{/receive}}

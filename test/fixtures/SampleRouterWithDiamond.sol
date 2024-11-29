@@ -13,7 +13,17 @@ contract SampleRouter {
     error UnknownSelector(bytes4 sel);
 
     constructor() {
-        _emitDiamondCutEvent();
+
+        bytes4[] memory selectors;
+        
+              selectors = new bytes4[](4);
+                      selectors[0] = 0x60988e09;
+        selectors[1] = 0x2d22bef9;
+        selectors[2] = 0xc6f79537;
+        selectors[3] = 0xd245d983;
+            _facets().push(Facet(_SAMPLE_MODULE, selectors));
+
+        _emitDiamondCutEvent();        
     }
     address private constant _SAMPLE_MODULE = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
 
@@ -81,26 +91,34 @@ contract SampleRouter {
         bytes4[] functionSelectors;
     }
 
+    enum FacetCutAction {Add, Replace, Remove}
+    // Add=0, Replace=1, Remove=2
+
+    struct FacetCut {
+        address facetAddress;
+        FacetCutAction action;
+        bytes4[] functionSelectors;
+    }
+
     /// @notice Gets all facet addresses and their four byte function selectors.
     /// @return facets_ Facet
-    function _facets() internal pure returns (Facet[] memory facets_) {
-        facets_ = new Facet[](1);
-        facets_[0] = Facet(_SAMPLE_MODULE, _facetFunctionSelectors(_SAMPLE_MODULE));
+    function _facets() internal view returns (Facet[] storage facets_) {
+        bytes32 s = keccak256("Router.SampleRouter");
+        assembly {
+            facets_.slot := s
+        }
     }
 
     /// @notice Gets all the function selectors supported by a specific facet.
     /// @param _facet The facet address.
     /// @return facetFunctionSelectors_
-    function _facetFunctionSelectors(address _facet) internal pure returns (bytes4[] memory facetFunctionSelectors_) {
-        if (_facet == _SAMPLE_MODULE) {
-            facetFunctionSelectors_ = new bytes4[](4);
-            facetFunctionSelectors_[0] = 0x60988e09;
-            facetFunctionSelectors_[1] = 0x2d22bef9;
-            facetFunctionSelectors_[2] = 0xc6f79537;
-            facetFunctionSelectors_[3] = 0xd245d983;
-            return facetFunctionSelectors_;
+    function _facetFunctionSelectors(address _facet) internal view returns (bytes4[] memory facetFunctionSelectors_) {
+        Facet[] storage facets = _facets();
+        for (uint256 i = 0;i < facets.length;i++) {
+            if (facets[i].facetAddress == _facet) {
+                return facets[i].functionSelectors;
+            }
         }
-
     }
 
     /// @notice Get all the facet addresses used by a diamond.
@@ -114,24 +132,15 @@ contract SampleRouter {
     /// @dev If facet is not found return address(0).
     /// @param _functionSelector The function selector.
     /// @return facetAddress_ The facet address.
-    function _facetAddress(bytes4 _functionSelector) internal pure returns (address facetAddress_) {
-        if (
-            _functionSelector == 0x60988e09 || 
-            _functionSelector == 0x2d22bef9 || 
-            _functionSelector == 0xc6f79537 || 
-            _functionSelector == 0xd245d983
-        ) {
-            return _SAMPLE_MODULE;
+    function _facetAddress(bytes4 _functionSelector) internal view returns (address facetAddress_) {
+        Facet[] storage facets = _facets();
+        for (uint256 i = 0;i < facets.length;i++) {
+            for (uint256 j = 0;j < facets[i].functionSelectors.length;j++) {
+                if (facets[i].functionSelectors[j] == _functionSelector) {
+                    return facets[i].facetAddress;
+                }
+            }
         }
-    }
-
-    enum FacetCutAction {Add, Replace, Remove}
-    // Add=0, Replace=1, Remove=2
-
-    struct FacetCut {
-        address facetAddress;
-        FacetCutAction action;
-        bytes4[] functionSelectors;
     }
 
     event DiamondCut(FacetCut[] _diamondCut, address _init, bytes _calldata);

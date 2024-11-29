@@ -56,13 +56,18 @@ export function renderRouter({
 
   return Mustache.render(template, {
     moduleName: routerName,
-    modules: _renderModules(contracts),
+    modules: _renderModules(contracts, functionFilter),
     selectors: _renderSelectors(binaryData),
     // Note: Plain ETH transfers are disabled by default. Set this to true to
     // enable them. If there is ever a use case for this, it might be a good
     // idea to expose the boolean in the router tool's interface.
     receive: _renderReceive(canReceivePlainETH),
-    diamondCompat: hasDiamondCompat ? _renderDiamondCompat(contracts, functionFilter) : undefined,
+    diamondConstructor: hasDiamondCompat
+      ? _renderDiamondConstructor(contracts, functionFilter)
+      : undefined,
+    diamondCompat: hasDiamondCompat
+      ? _renderDiamondCompat(routerName, contracts, functionFilter)
+      : undefined,
   });
 }
 
@@ -131,7 +136,30 @@ function _renderSelectors(binaryData: BinaryData) {
   return selectorsStr.trim();
 }
 
+function _renderDiamondConstructor(
+  contractData: ContractData[],
+  functionFilter: Props['functionFilter']
+) {
+  const facets = contractData.map(({ contractName, abi }) => {
+    return { contractName, selectors: getSelectors(abi, functionFilter) };
+  });
+  return `
+        bytes4[] memory selectors;
+        ${facets
+          .map(
+            (f, i) =>
+              `
+              selectors = new bytes4[](${f.selectors.length});
+              ${f.selectors.map((s, j) => `${TAB}${TAB}selectors[${j}] = ${s.selector};`).join('\n')}
+            _facets().push(Facet(${toPrivateConstantCase(f.contractName)}, selectors));`
+          )
+          .join('\n        ')}
+
+        _emitDiamondCutEvent();`;
+}
+
 function _renderDiamondCompat(
+  routerName: string,
   contractData: ContractData[],
   functionFilter: Props['functionFilter']
 ) {
@@ -144,33 +172,34 @@ function _renderDiamondCompat(
         bytes4[] functionSelectors;
     }
 
+    enum FacetCutAction {Add, Replace, Remove}
+    // Add=0, Replace=1, Remove=2
+
+    struct FacetCut {
+        address facetAddress;
+        FacetCutAction action;
+        bytes4[] functionSelectors;
+    }
+
     /// @notice Gets all facet addresses and their four byte function selectors.
     /// @return facets_ Facet
-    function _facets() internal pure returns (Facet[] memory facets_) {
-        facets_ = new Facet[](${facets.length});
-        ${facets
-          .map(
-            (f, i) =>
-              `facets_[${i}] = Facet(${toPrivateConstantCase(
-                f.contractName
-              )}, _facetFunctionSelectors(${toPrivateConstantCase(f.contractName)}));`
-          )
-          .join('\n        ')}
+    function _facets() internal view returns (Facet[] storage facets_) {
+        bytes32 s = keccak256("Router.${routerName}");
+        assembly {
+            facets_.slot := s
+        }
     }
 
     /// @notice Gets all the function selectors supported by a specific facet.
     /// @param _facet The facet address.
     /// @return facetFunctionSelectors_
-    function _facetFunctionSelectors(address _facet) internal pure returns (bytes4[] memory facetFunctionSelectors_) {
-        ${facets
-          .map(
-            (f) => `if (_facet == ${toPrivateConstantCase(f.contractName)}) {
-            facetFunctionSelectors_ = new bytes4[](${f.selectors.length});
-            ${f.selectors.map((s, i) => `facetFunctionSelectors_[${i}] = ${s.selector};`).join('\n            ')}
-            return facetFunctionSelectors_;
-        }\n`
-          )
-          .join('\n        ')}
+    function _facetFunctionSelectors(address _facet) internal view returns (bytes4[] memory facetFunctionSelectors_) {
+        Facet[] storage facets = _facets();
+        for (uint256 i = 0;i < facets.length;i++) {
+            if (facets[i].facetAddress == _facet) {
+                return facets[i].functionSelectors;
+            }
+        }
     }
 
     /// @notice Get all the facet addresses used by a diamond.
@@ -184,25 +213,15 @@ function _renderDiamondCompat(
     /// @dev If facet is not found return address(0).
     /// @param _functionSelector The function selector.
     /// @return facetAddress_ The facet address.
-    function _facetAddress(bytes4 _functionSelector) internal pure returns (address facetAddress_) {
-        ${facets
-          .map(
-            (f) => `if (
-            ${f.selectors.map((s) => `_functionSelector == ${s.selector}`).join(' || \n            ')}
-        ) {
-            return ${toPrivateConstantCase(f.contractName)};
-        }`
-          )
-          .join('\n        ')}
-    }
-
-    enum FacetCutAction {Add, Replace, Remove}
-    // Add=0, Replace=1, Remove=2
-
-    struct FacetCut {
-        address facetAddress;
-        FacetCutAction action;
-        bytes4[] functionSelectors;
+    function _facetAddress(bytes4 _functionSelector) internal view returns (address facetAddress_) {
+        Facet[] storage facets = _facets();
+        for (uint256 i = 0;i < facets.length;i++) {
+            for (uint256 j = 0;j < facets[i].functionSelectors.length;j++) {
+                if (facets[i].functionSelectors[j] == _functionSelector) {
+                    return facets[i].facetAddress;
+                }
+            }
+        }
     }
 
     event DiamondCut(FacetCut[] _diamondCut, address _init, bytes _calldata);
@@ -222,14 +241,26 @@ function _renderDiamondCompat(
  *   address private constant _ANOTHER_MODULE = 0xAA...;
  *   address private constant _OWNER_MODULE = 0x5c..;
  */
-function _renderModules(contracts: ContractData[]) {
-  return contracts
+function _renderModules(contracts: ContractData[], functionFilter: Props['functionFilter']) {
+  const contractModuleConsts = contracts
     .map(({ contractName, deployedAddress }) => {
       const name = toPrivateConstantCase(contractName);
       return `${TAB}address private constant ${name} = ${deployedAddress};`;
     })
     .join('\n')
     .trim();
+
+  const selectorConsts = contracts
+    .map(({ abi }) => {
+      return getSelectors(abi, functionFilter).map(
+        (s) => `${TAB}bytes4 private constant ${s.selector} = ${s.selector};`
+      );
+    })
+    .flat()
+    .join('\n')
+    .trim();
+
+  return `${contractModuleConsts}`;
 }
 
 function _buildBinaryData(selectors: FunctionSelector[]) {
