@@ -12,10 +12,11 @@ pragma solidity ^0.8.0;
 contract {{{moduleName}}} {
     error UnknownSelector(bytes4 sel);
 
-{{#diamondConstructor}}    constructor() {
+    address immutable private _ROUTER_ADDRESS;
+    constructor() {
+        _ROUTER_ADDRESS = address(this);
 {{{diamondConstructor}}}        
     }
-{{/diamondConstructor}}
     {{{modules}}}
 {{#receive}}    {{{receive}}}{{/receive}}
 {{^receive}}{{/receive}}
@@ -36,23 +37,33 @@ contract {{{moduleName}}} {
 
         if (implementation == address(0)) {
 {{#diamondCompat}}
-            // Check for diamond compat call
-            if (sig4 == 0x7a0ed627) {
-                return abi.encode(_facets());
-            }
-            if (sig4 == 0xadfca15e) {
-                (address facet) = abi.decode(cd[4:], (address));
-                return abi.encode(_facetFunctionSelectors(facet));
-            }
-            if (sig4 == 0x52ef6b2c) {
-                return abi.encode(_facetAddresses());
-            }
-            if (sig4 == 0xcdffacc6) {
-                (bytes4 sig) = abi.decode(cd[4:], (bytes4));
-                return abi.encode(_facetAddress(sig));
-            }
-            if (sig4 == 0x8cce96cb) {
-                return abi.encode(_emitDiamondCutEvent());
+            // It's possible this contract is being called through yet another proxy. Call the router in order to make sure we have right data.
+            if (address(this) != _ROUTER_ADDRESS) {
+                (bool success, bytes memory result) = _ROUTER_ADDRESS.call(cd);
+                if (success) {
+                    return result;
+                } else {
+                    revert UnknownSelector(sig4);
+                }
+            } else {
+                // Check for diamond compat call
+                if (sig4 == 0x7a0ed627) {
+                    return abi.encode(_facets());
+                }
+                if (sig4 == 0xadfca15e) {
+                    (address facet) = abi.decode(cd[4:], (address));
+                    return abi.encode(_facetFunctionSelectors(facet));
+                }
+                if (sig4 == 0x52ef6b2c) {
+                    return abi.encode(_facetAddresses());
+                }
+                if (sig4 == 0xcdffacc6) {
+                    (bytes4 sig) = abi.decode(cd[4:], (bytes4));
+                    return abi.encode(_facetAddress(sig));
+                }
+                if (sig4 == 0x8cce96cb) {
+                    return abi.encode(_emitDiamondCutEvent());
+                }
             }
 {{/diamondCompat}}
             revert UnknownSelector(sig4);

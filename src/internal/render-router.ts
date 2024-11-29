@@ -183,7 +183,7 @@ function _renderDiamondCompat(
 
     /// @notice Gets all facet addresses and their four byte function selectors.
     /// @return facets_ Facet
-    function _facets() internal view returns (Facet[] storage facets_) {
+    function _facets() internal pure returns (Facet[] storage facets_) {
         bytes32 s = keccak256("Router.${routerName}");
         assembly {
             facets_.slot := s
