@@ -7,6 +7,10 @@ import "../src/fixtures/SampleRouterWithDiamond.sol";
 import "../src/interfaces/IDiamond.sol";
 import "../src/interfaces/ISampleModule.sol";
 
+interface IDiamondExtra {
+    function emitDiamondCutEvent() external returns (bool);
+}
+
 contract TestSampleRouterWithDiamond is Test {
     address constant SAMPLE_MODULE = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
 
@@ -146,5 +150,14 @@ contract TestSampleRouterWithDiamond is Test {
         assertEq(uint32(selectors[1]), uint32(0x2d22bef9));
         assertEq(uint32(selectors[2]), uint32(0xc6f79537));
         assertEq(uint32(selectors[3]), uint32(0xd245d983));
+    }
+
+    SampleRouterWithDiamond.FacetCut[] cuts;
+
+    function testCutEmit() public {
+        // Event should come from proxy instead of router
+        vm.expectEmit(false, false, false, false, address(proxy));
+        emit SampleRouterWithDiamond.DiamondCut(cuts, address(0), new bytes(0));
+        IDiamondExtra(address(proxy)).emitDiamondCutEvent();
     }
 }
