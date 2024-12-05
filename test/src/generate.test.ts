@@ -2,6 +2,7 @@ import { deepEqual, throws } from 'node:assert/strict';
 
 import GreeterModuleABI from '../fixtures/GreeterModuleABI.json';
 import SampleModuleABI from '../fixtures/SampleModuleABI.json';
+import BigModuleABI from '../fixtures/BigModuleABI.json';
 import { ContractValidationError } from '../../src/internal/errors';
 import { generateRouter } from '../../src/generate';
 import { loadFile } from './helpers';
@@ -191,6 +192,31 @@ describe('src/generate.ts', function () {
           contractName: 'GreeterModule',
           sourceName: 'contracts/modules/GreeterModule.sol',
           contractFullyQualifiedName: 'contracts/modules/GreeterModule.sol:GreeterModule',
+        },
+      ],
+      hasDiamondCompat: true,
+    });
+
+    try {
+      deepEqual(result, expected);
+    } catch (err) {
+      console.log(result);
+      throw err;
+    }
+  });
+
+  it('correctly generates BigRouter.sol', async function () {
+    const expected = await loadFile('../fixtures/BigRouter.sol');
+    const result = generateRouter({
+      contractName: 'BigRouter',
+      contracts: [
+        {
+          abi: BigModuleABI,
+          deployedAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+          deployTxnHash: '0x849b033c0ee690c8b9a53057495d9b3e16588a26d51a7cad4dfc6cd3d310ce0e',
+          contractName: 'BigModuleABI',
+          sourceName: 'contracts/modules/BigModuleABI.sol',
+          contractFullyQualifiedName: 'contracts/modules/BigModuleABI.sol:BigModuleABI',
         },
       ],
       hasDiamondCompat: true,
