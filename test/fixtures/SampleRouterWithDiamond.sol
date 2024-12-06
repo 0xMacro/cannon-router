@@ -16,15 +16,6 @@ contract SampleRouterWithDiamond {
 
     constructor() {
         _ROUTER_ADDRESS = address(this);
-
-        bytes4[] memory selectors;
-        selectors = new bytes4[](4);
-        selectors[0] = 0x60988e09;
-        selectors[1] = 0x2d22bef9;
-        selectors[2] = 0xc6f79537;
-        selectors[3] = 0xd245d983;
-        _facets().push(Facet(_SAMPLE_MODULE, selectors));
-
         _emitDiamondCutEvent();
     }
 
@@ -51,33 +42,23 @@ contract SampleRouterWithDiamond {
         }
 
         if (implementation == address(0)) {
-            // It's possible this contract is being called through yet another proxy. Call the router in order to make sure we have right data.
-            if (address(this) != _ROUTER_ADDRESS) {
-                (bool success, bytes memory result) = _ROUTER_ADDRESS.call(cd);
-                if (success) {
-                    return result;
-                } else {
-                    revert UnknownSelector(sig4);
-                }
-            } else {
-                // Check for diamond compat call
-                if (sig4 == 0x7a0ed627) {
-                    return abi.encode(_facets());
-                }
-                if (sig4 == 0xadfca15e) {
-                    (address facet) = abi.decode(cd[4:], (address));
-                    return abi.encode(_facetFunctionSelectors(facet));
-                }
-                if (sig4 == 0x52ef6b2c) {
-                    return abi.encode(_facetAddresses());
-                }
-                if (sig4 == 0xcdffacc6) {
-                    (bytes4 sig) = abi.decode(cd[4:], (bytes4));
-                    return abi.encode(_facetAddress(sig));
-                }
-                if (sig4 == 0x8cce96cb) {
-                    return abi.encode(_emitDiamondCutEvent());
-                }
+            // Check for diamond compat call
+            if (sig4 == 0x7a0ed627) {
+                return abi.encode(_facets());
+            }
+            if (sig4 == 0xadfca15e) {
+                (address facet) = abi.decode(cd[4:], (address));
+                return abi.encode(_facetFunctionSelectors(facet));
+            }
+            if (sig4 == 0x52ef6b2c) {
+                return abi.encode(_facetAddresses());
+            }
+            if (sig4 == 0xcdffacc6) {
+                (bytes4 sig) = abi.decode(cd[4:], (bytes4));
+                return abi.encode(_facetAddress(sig));
+            }
+            if (sig4 == 0x8cce96cb) {
+                return abi.encode(_emitDiamondCutEvent());
             }
             revert UnknownSelector(sig4);
         }
@@ -114,19 +95,23 @@ contract SampleRouterWithDiamond {
     }
 
     /// @notice Gets all facet addresses and their four byte function selectors.
-    /// @return facets_ Facet
-    function _facets() internal pure returns (Facet[] storage facets_) {
-        bytes32 s = keccak256("Router.SampleRouterWithDiamond");
-        assembly {
-            facets_.slot := s
-        }
+    /// @return facets Facet
+    function _facets() internal pure returns (Facet[] memory facets) {
+        facets = new Facet[](1);
+        bytes4[] memory selectors;
+        selectors = new bytes4[](4);
+        selectors[0] = 0x60988e09;
+        selectors[1] = 0x2d22bef9;
+        selectors[2] = 0xc6f79537;
+        selectors[3] = 0xd245d983;
+        facets[0] = Facet(_SAMPLE_MODULE, selectors);
     }
 
     /// @notice Gets all the function selectors supported by a specific facet.
     /// @param _facet The facet address.
     /// @return facetFunctionSelectors_
-    function _facetFunctionSelectors(address _facet) internal view returns (bytes4[] memory facetFunctionSelectors_) {
-        Facet[] storage facets = _facets();
+    function _facetFunctionSelectors(address _facet) internal pure returns (bytes4[] memory facetFunctionSelectors_) {
+        Facet[] memory facets = _facets();
         for (uint256 i = 0;i < facets.length;i++) {
             if (facets[i].facetAddress == _facet) {
                 return facets[i].functionSelectors;
@@ -145,8 +130,8 @@ contract SampleRouterWithDiamond {
     /// @dev If facet is not found return address(0).
     /// @param _functionSelector The function selector.
     /// @return facetAddress_ The facet address.
-    function _facetAddress(bytes4 _functionSelector) internal view returns (address facetAddress_) {
-        Facet[] storage facets = _facets();
+    function _facetAddress(bytes4 _functionSelector) internal pure returns (address facetAddress_) {
+        Facet[] memory facets = _facets();
         for (uint256 i = 0;i < facets.length;i++) {
             for (uint256 j = 0;j < facets[i].functionSelectors.length;j++) {
                 if (facets[i].functionSelectors[j] == _functionSelector) {
@@ -160,8 +145,9 @@ contract SampleRouterWithDiamond {
 
     /// @notice Emits the cut events that would be emitted if this was actually a diamond
     function _emitDiamondCutEvent() internal returns (bool) {
-        FacetCut[] memory cuts = new FacetCut[](1);
-        cuts[0] = FacetCut(_SAMPLE_MODULE, FacetCutAction.Add, _facetFunctionSelectors(_SAMPLE_MODULE));
+        Facet[] memory facets = _facets();
+        FacetCut[] memory cuts = new FacetCut[](2);
+        cuts[0] = FacetCut(facets[0].facetAddress, FacetCutAction.Add, facets[0].functionSelectors);
         emit DiamondCut(cuts, address(0), new bytes(0));
         return true;
     }
